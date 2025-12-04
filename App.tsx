@@ -334,7 +334,7 @@ const SecretTerminal = ({ onClose }: { onClose: () => void }) => {
          <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar mb-4 pr-2 space-y-2 z-10 min-h-0">
             {history.length === 0 && (
               <div className="text-zinc-700 text-xs italic opacity-50 pt-10 text-center">
-                 > SEQUENCE_LOG_INITIALIZED...
+                 {'>'} SEQUENCE_LOG_INITIALIZED...
               </div>
             )}
             
