@@ -1,17 +1,420 @@
-import React from 'react';
-import { ArrowUpRight, Box, Terminal, Cpu, Mic, Layers, Zap, Anchor, Globe, Command, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ArrowUpRight, Box, Terminal, Cpu, Mic, Layers, Zap, Anchor, Globe, Command, ArrowRight, X, ChevronRight, RefreshCw, Hash, AlignLeft, Type, ChevronDown, Clock } from 'lucide-react';
 
-const Navbar = () => (
+// --- Acronym Data (Mode 1) ---
+
+const JDI_PHRASES = [
+  "Just Do It",
+  "Just Deploy It",
+  "Joint Design Initiative",
+  "Jedi Defense Institute",
+  "Javascript Domination Institute",
+  "Joyful Digital Interfaces",
+  "Junior Developer Issues",
+  "Juicy Data Insights",
+  "Jet Driven Ignition",
+  "Just Debug It",
+  "Jazz Duo Improv",
+  "Jumbo Dumpling Index",
+  "Java Developers Incorporated",
+  "Jupiter Defense Initiative",
+  "Just Download It"
+];
+
+const SH_PHRASES = [
+  "Software Holdings",
+  "Software House",
+  "Ship Hard",
+  "Super Heroes",
+  "System Hackers",
+  "Shell Host",
+  "Source Hub",
+  "Syntax Highlighters",
+  "Silicon Harbor",
+  "Stack Heaps",
+  "Self Hosting",
+  "Server Health",
+  "Static HTML",
+  "Secure Hash",
+  "System Halt"
+];
+
+// --- Sentence Data (Mode 2 - Initials) ---
+const JDI_SENTENCES = [
+  "Just Design Interfaces So Human",
+  "Join Digital Innovators Shipping Hardware",
+  "JavaScript Developers In Silicon Hills",
+  "Journey Deep Inside System Heaps",
+  "Judge Data In Safe Hands",
+  "Just Deploy It, Stay Hungry",
+  "Jet Dreams Ignite Sky High",
+  "Junior Devs Ignore Safe Hooks",
+  "Just Do It, Ship Hard",
+  "Joyful Design Is Super Hard",
+  "Jason Dropped Into Shell Hell",
+  "Jupiter Density Is So Heavy"
+];
+
+// --- Stream Data (Mode 3 - Embedded) ---
+const JDI_STREAMS = [
+  "The trajectory of modern software is to abstract the machine, but we reject the dogma that complication is helpful.",
+  "Subjective code quality often vanishes when you ship hard deadlines.",
+  "Objects in modern Swift can crash hard if not handled with care.",
+  "Major paradigm shifts cause chaos, but judging distance is how we survive.",
+  "Project adaption was hard, but the result justified the struggle.",
+  "We inject dependencies into systems holding critical user data.",
+  "Adjusting the display is a harsh reality of frontend engineering.",
+  "Trajectory data is showing high latency across the cluster.",
+  "Subjecting digital infrastructure to standard heuristics is mandatory."
+];
+
+// --- Secret Components ---
+
+type TerminalMode = 'ACRONYM' | 'SENTENCE' | 'STREAM';
+
+interface HistoryItem {
+  id: string;
+  mode: TerminalMode;
+  content: React.ReactNode;
+  timestamp: string;
+}
+
+// Universal Highlighter handles both Acronym Initials and Distributed Sequences
+const UniversalHighlighter = ({ text, mode, subType }: { text: string, mode: TerminalMode, subType?: 'PREFIX' | 'SUFFIX' }) => {
+  const elements: React.ReactNode[] = [];
+  
+  // LOGIC 1: ACRONYM INITIALS
+  if (mode === 'ACRONYM') {
+    // If Prefix (JDI), highlight J, D, I initials
+    // If Suffix (SH), highlight S, H initials
+    const words = text.split(' ');
+    let targetIndex = 0;
+    const targets = subType === 'PREFIX' ? ['j','d','i'] : ['s','h'];
+    const highlightColor = subType === 'PREFIX' ? 'text-orange-500' : 'text-blue-500';
+    
+    words.forEach((word, wordIdx) => {
+      const firstChar = word.charAt(0);
+      const rest = word.slice(1);
+      
+      const isTarget = targetIndex < targets.length && firstChar.toLowerCase() === targets[targetIndex];
+      if (isTarget) targetIndex++;
+
+      elements.push(
+        <span key={`word-${wordIdx}`} className="mr-2 inline-block">
+          <span className={`${isTarget ? `${highlightColor} font-bold glow-text` : 'text-zinc-400'}`}>{firstChar}</span>
+          <span className="text-zinc-500">{rest}</span>
+        </span>
+      );
+    });
+    
+    return <>{elements}</>;
+  }
+
+  // LOGIC 2: DISTRIBUTED SEQUENCE (J...D...I...S...H)
+  const targetChars = ['j', 'd', 'i', 's', 'h'];
+  let searchIdx = 0; 
+  let lastIdx = 0;
+
+  for (let i = 0; i < text.length; i++) {
+    if (searchIdx < targetChars.length && text[i].toLowerCase() === targetChars[searchIdx]) {
+      // Match found
+      if (i > lastIdx) {
+        elements.push(<span key={`text-${i}`} className="text-zinc-600 transition-colors">{text.slice(lastIdx, i)}</span>);
+      }
+      elements.push(
+        <span key={`char-${i}`} className="text-orange-500 font-bold glow-text bg-orange-500/10 rounded-sm px-0.5 mx-[-1px]">
+          {text[i]}
+        </span>
+      );
+      lastIdx = i + 1;
+      searchIdx++;
+    }
+  }
+  
+  if (lastIdx < text.length) {
+    elements.push(<span key="text-end" className="text-zinc-600">{text.slice(lastIdx)}</span>);
+  }
+
+  return <>{elements}</>;
+};
+
+const SecretTerminal = ({ onClose }: { onClose: () => void }) => {
+  const [mode, setMode] = useState<TerminalMode>('ACRONYM');
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  
+  // Current Active State
+  const [activeContent, setActiveContent] = useState<React.ReactNode | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  // Layout State
+  const [height, setHeight] = useState(400);
+  const [isResizing, setIsResizing] = useState(false);
+  
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<number | null>(null);
+
+  // Resize Logic
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const newHeight = window.innerHeight - e.clientY;
+      // Constraints: Min 200px, Max 80% of screen
+      if (newHeight >= 200 && newHeight <= window.innerHeight * 0.8) {
+        setHeight(newHeight);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+
+    if (isResizing) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'ns-resize';
+      document.body.style.userSelect = 'none'; // Prevent text selection while resizing
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = 'default';
+      document.body.style.userSelect = 'auto';
+    };
+  }, [isResizing]);
+
+  // Auto-scroll to bottom when history updates
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [history, activeContent]);
+
+  const addToHistory = (content: React.ReactNode, m: TerminalMode) => {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }) + "." + Math.floor(Math.random() * 999).toString().padStart(3, '0');
+    setHistory(prev => [...prev.slice(-20), { id: Math.random().toString(36), mode: m, content, timestamp }]);
+  };
+
+  const generate = () => {
+    if (isGenerating) return;
+    
+    // If we have existing content, push it to history before generating new
+    if (activeContent) {
+      addToHistory(activeContent, mode);
+    }
+
+    setIsGenerating(true);
+    let count = 0;
+    const max = 8; // Faster roll for snappiness
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = window.setInterval(() => {
+      count++;
+      
+      let newContent: React.ReactNode;
+
+      if (mode === 'ACRONYM') {
+        const jPhrase = JDI_PHRASES[Math.floor(Math.random() * JDI_PHRASES.length)];
+        const sPhrase = SH_PHRASES[Math.floor(Math.random() * SH_PHRASES.length)];
+        
+        newContent = (
+          <div className="flex flex-col md:flex-row gap-2 md:gap-6 items-baseline">
+             <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-widest text-orange-500/50 select-none">PREFIX</span>
+                <span className="text-xl font-bold tracking-tight">
+                  <UniversalHighlighter text={jPhrase} mode="ACRONYM" subType="PREFIX" />
+                </span>
+             </div>
+             <div className="hidden md:block text-zinc-800">/</div>
+             <div className="flex items-center gap-2">
+                <span className="text-[9px] uppercase tracking-widest text-blue-500/50 select-none">SUFFIX</span>
+                <span className="text-xl font-bold tracking-tight">
+                  <UniversalHighlighter text={sPhrase} mode="ACRONYM" subType="SUFFIX" />
+                </span>
+             </div>
+          </div>
+        );
+      } else {
+        const rawText = mode === 'SENTENCE' 
+          ? JDI_SENTENCES[Math.floor(Math.random() * JDI_SENTENCES.length)]
+          : JDI_STREAMS[Math.floor(Math.random() * JDI_STREAMS.length)];
+          
+        newContent = (
+          <div className="text-lg md:text-xl font-medium leading-relaxed">
+            <UniversalHighlighter text={rawText} mode={mode} />
+          </div>
+        );
+      }
+
+      setActiveContent(newContent);
+
+      if (count >= max) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setIsGenerating(false);
+      }
+    }, 60);
+  };
+
+  // Initial generation on mount
+  useEffect(() => {
+    generate();
+    return () => {
+       if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []); // Run once
+
+  // Reset active content when mode changes so we don't push wrong mode to history
+  useEffect(() => {
+     setActiveContent(null);
+     generate();
+  }, [mode]);
+
+  return (
+    <div 
+      style={{ height: `${height}px` }}
+      className="fixed bottom-0 left-0 right-0 z-[100] bg-[#0c0c0e] border-t border-zinc-800 shadow-[0_-20px_50px_rgba(0,0,0,0.7)] flex flex-col font-mono animate-in slide-in-from-bottom duration-500 ease-out"
+    >
+      {/* Resize Handle */}
+      <div 
+        onMouseDown={() => setIsResizing(true)}
+        className="absolute top-0 left-0 right-0 h-1.5 cursor-ns-resize z-50 hover:bg-orange-500/50 transition-colors flex justify-center items-center group"
+      >
+        <div className="w-12 h-0.5 bg-zinc-700 group-hover:bg-white rounded-full transition-colors opacity-0 group-hover:opacity-100" />
+      </div>
+
+      {/* Console Toolbar */}
+      <div className="bg-[#09090b] border-b border-zinc-800 h-10 flex items-center justify-between px-4 select-none flex-shrink-0">
+         <div className="flex items-center gap-6">
+           <div 
+             className="flex items-center gap-2 text-zinc-500 hover:text-white cursor-pointer transition-colors group" 
+             onClick={onClose}
+           >
+              <div className="w-2 h-2 rounded-full bg-red-500 group-hover:bg-red-400"></div>
+              <span className="text-[10px] font-bold uppercase tracking-widest">Close Terminal</span>
+           </div>
+           
+           <div className="h-4 w-[1px] bg-zinc-800"></div>
+           
+           {/* Mode Switcher */}
+           <div className="flex bg-zinc-900/50 rounded-lg p-0.5 border border-zinc-800">
+              {(['ACRONYM', 'SENTENCE', 'STREAM'] as TerminalMode[]).map((m) => (
+                <button 
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={`px-3 py-1 text-[10px] uppercase tracking-wider font-bold rounded-[4px] transition-all ${mode === m ? 'bg-zinc-800 text-white shadow-sm' : 'text-zinc-600 hover:text-zinc-400'}`}
+                >
+                  {m}
+                </button>
+              ))}
+           </div>
+         </div>
+         
+         <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className={`w-1.5 h-1.5 rounded-full ${isGenerating ? 'bg-orange-500 animate-pulse' : 'bg-green-500'}`}></div>
+              <span className="text-[9px] uppercase tracking-widest text-zinc-500">{isGenerating ? 'PROCESSING' : 'READY'}</span>
+            </div>
+            
+            <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors p-1">
+               <X size={14} />
+            </button>
+         </div>
+      </div>
+
+      {/* Console Output Area */}
+      <div className="flex-1 p-6 relative bg-[#050505] overflow-hidden flex flex-col">
+         {/* Scanline & Grid */}
+         <div className="absolute inset-0 pointer-events-none opacity-5 bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] z-0"></div>
+         <div className="absolute inset-0 opacity-[0.02] pointer-events-none" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+
+         {/* Scrollable Log */}
+         <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar mb-4 pr-2 space-y-2 z-10 min-h-0">
+            {history.length === 0 && (
+              <div className="text-zinc-700 text-xs italic opacity-50 pt-10 text-center">
+                 > SEQUENCE_LOG_INITIALIZED...
+              </div>
+            )}
+            
+            {history.map((item) => (
+              <div key={item.id} className="flex items-baseline gap-4 text-xs group opacity-60 hover:opacity-100 transition-opacity">
+                 <div className="w-24 flex-shrink-0 text-zinc-600 font-mono text-[10px] flex items-center gap-2">
+                    <span>{item.timestamp}</span>
+                    <span className="text-zinc-700">|</span>
+                 </div>
+                 <div className="flex-1">
+                    {/* Render content but force smaller text for history */}
+                    {/* Remove grayscale so colors persist, just reduce opacity */}
+                    <div className="scale-90 origin-left transition-all">
+                      {item.content}
+                    </div>
+                 </div>
+              </div>
+            ))}
+         </div>
+
+         {/* Active Generation Row (Sticky Bottom) */}
+         <div className="border-t border-zinc-800/50 pt-4 mt-auto z-10 flex-shrink-0 bg-[#050505]/95 backdrop-blur-sm">
+             <div className="flex items-center gap-4 mb-2">
+                <div className="text-[10px] text-zinc-500 font-mono uppercase tracking-widest flex items-center gap-2">
+                  <ChevronRight size={12} className="text-orange-500" />
+                  CURRENT_SEQUENCE
+                </div>
+             </div>
+             
+             <div className="min-h-[60px] flex items-center">
+               {activeContent ? (
+                 <div className="w-full animate-in fade-in duration-300">
+                   {activeContent}
+                 </div>
+               ) : (
+                 <span className="text-zinc-700 animate-pulse text-sm">Waiting for input...</span>
+               )}
+             </div>
+
+             <div className="flex justify-between items-center mt-4">
+               <div className="text-[10px] text-zinc-600 font-mono">
+                 ID: {Math.floor(Math.random() * 9999).toString().padStart(4, '0')} // MODE: {mode}
+               </div>
+               
+               <button 
+                 onClick={generate}
+                 disabled={isGenerating}
+                 className="flex items-center gap-2 px-6 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-xs font-bold uppercase tracking-widest text-zinc-300 hover:text-white transition-all rounded-sm group shadow-lg"
+               >
+                 <RefreshCw size={12} className={`group-hover:rotate-180 transition-transform duration-500 ${isGenerating ? 'animate-spin text-orange-500' : ''}`} />
+                 Reroll Sequence
+               </button>
+             </div>
+         </div>
+      </div>
+    </div>
+  );
+};
+
+// --- Navigation ---
+
+const Navbar = ({ onViewChange, currentView }: { onViewChange: (view: 'home' | 'manifesto') => void, currentView: string }) => (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-800">
     <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 bg-white flex items-center justify-center">
+      <div 
+        className="flex items-center gap-3 cursor-pointer group"
+        onClick={() => onViewChange('home')}
+      >
+        <div className="w-8 h-8 bg-white flex items-center justify-center group-hover:bg-orange-500 transition-colors">
           <Command size={16} className="text-black" strokeWidth={3} />
         </div>
         <span className="font-sans font-bold text-lg tracking-tighter text-white">JDI.SH</span>
       </div>
       <div className="hidden md:flex items-center gap-8">
-        <span className="text-xs font-bold uppercase tracking-widest text-zinc-500">Est. 2024</span>
+        <button 
+          onClick={() => onViewChange('manifesto')}
+          className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentView === 'manifesto' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
+        >
+          Manifesto
+        </button>
         <div className="h-4 w-[1px] bg-zinc-800"></div>
         <a href="mailto:hello@jdi.sh" className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
             <span className="text-xs font-bold uppercase tracking-widest">Contact</span>
@@ -21,11 +424,13 @@ const Navbar = () => (
   </nav>
 );
 
-const Hero = () => (
+// --- Home View Components ---
+
+const Hero = ({ onViewChange }: { onViewChange: (view: 'manifesto') => void }) => (
   <section className="pt-40 pb-32 px-6 max-w-[1400px] mx-auto border-b border-zinc-800">
     <div className="max-w-4xl">
       <div className="inline-flex items-center gap-2 mb-8 border border-zinc-800 px-3 py-1 rounded-full bg-zinc-900/50">
-        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full"></div>
+        <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>
         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Software Holdings</span>
       </div>
       
@@ -33,51 +438,20 @@ const Hero = () => (
         JUST DO IT.
       </h1>
       
-      <p className="text-xl text-zinc-400 max-w-2xl leading-relaxed font-light font-sans border-l-2 border-orange-500 pl-6">
-        We build and ship cool software to improve life one thing at a time. 
-        No bloat. No bureaucracy. Just shipping.
-      </p>
-    </div>
-  </section>
-);
-
-const ManifestoItem = ({ number, title, desc }: { number: string, title: string, desc: string }) => (
-  <div className="group border-b border-zinc-800 py-12 hover:bg-zinc-900/20 transition-colors">
-    <div className="max-w-[1400px] mx-auto px-6 grid md:grid-cols-12 gap-8 items-start">
-      <div className="md:col-span-2 text-zinc-600 font-mono text-xs uppercase tracking-widest pt-2">
-        {number}
-      </div>
-      <div className="md:col-span-4">
-        <h3 className="text-2xl font-bold text-white font-sans uppercase tracking-tight group-hover:text-orange-500 transition-colors">
-          {title}
-        </h3>
-      </div>
-      <div className="md:col-span-6">
-        <p className="text-zinc-500 font-mono text-sm leading-relaxed max-w-lg">
-          {desc}
+      <div className="flex flex-col md:flex-row gap-10 items-start">
+        <p className="text-xl text-zinc-400 max-w-2xl leading-relaxed font-light font-sans border-l-2 border-orange-500 pl-6">
+          We build and ship cool software to improve life one thing at a time. 
+          No bloat. No bureaucracy. Just shipping.
         </p>
+        
+        <button 
+          onClick={() => onViewChange('manifesto')}
+          className="group flex items-center gap-3 px-6 py-4 bg-white text-black font-bold font-mono text-xs uppercase tracking-wider hover:bg-orange-500 hover:text-white transition-all"
+        >
+          Read The Protocol <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        </button>
       </div>
     </div>
-  </div>
-);
-
-const Manifesto = () => (
-  <section className="border-b border-zinc-800">
-    <ManifestoItem 
-      number="01" 
-      title="Ship Fast" 
-      desc="Speed is a feature. We believe in getting ideas out of the notebook and into the world as quickly as possible." 
-    />
-    <ManifestoItem 
-      number="02" 
-      title="Craft Matters" 
-      desc="Just because it's fast doesn't mean it's broken. We sweat the details on interaction, performance, and aesthetic." 
-    />
-    <ManifestoItem 
-      number="03" 
-      title="Compound Value" 
-      desc="We build tools that build other tools. Our infrastructure libraries power our consumer apps." 
-    />
   </section>
 );
 
@@ -141,7 +515,7 @@ const ProjectCard = ({
 );
 
 const Holdings = () => (
-  <section className="py-32 px-6 max-w-[1400px] mx-auto">
+  <section className="py-32 px-6 max-w-[1400px] mx-auto border-t border-zinc-800">
     <div className="flex items-end justify-between mb-16">
       <h2 className="text-4xl font-bold text-white font-sans tracking-tight">HOLDINGS</h2>
       <div className="flex items-center gap-2 text-zinc-500 text-xs font-mono">
@@ -163,9 +537,16 @@ const Holdings = () => (
         <div className="absolute right-0 bottom-0 w-[80%] h-[90%] bg-zinc-900/50 border-t border-l border-zinc-800 rounded-tl-2xl p-6 overflow-hidden group-hover:bg-zinc-900 transition-colors">
           {/* Abstract Voice UI */}
           <div className="flex flex-col h-full justify-center items-center gap-6">
-             <div className="flex gap-2 items-center justify-center">
-                {[1,2,3,4,5].map(i => (
-                  <div key={i} className={`w-3 bg-white rounded-full animate-pulse`} style={{ height: `${Math.random() * 40 + 20}px`, animationDuration: `${Math.random() * 0.5 + 0.5}s` }}></div>
+             <div className="flex gap-2 items-center justify-center h-20">
+                {[35, 60, 45, 65, 40].map((h, i) => (
+                  <div 
+                    key={i} 
+                    className="w-3 bg-white rounded-full group-hover:animate-pulse transition-all duration-300" 
+                    style={{ 
+                        height: `${h}px`, 
+                        animationDuration: `${0.6 + (i * 0.1)}s` 
+                    }}
+                  ></div>
                 ))}
              </div>
              <div className="text-center">
@@ -184,7 +565,7 @@ const Holdings = () => (
         links={[{ label: 'View Docs', url: '#' }]}
       >
         <div className="absolute right-[-20px] bottom-[-20px] p-6 opacity-40 group-hover:opacity-100 transition-opacity">
-           <Layers size={140} strokeWidth={0.5} className="text-zinc-600" />
+           <Layers size={140} strokeWidth={0.5} className="text-zinc-600 group-hover:rotate-12 group-hover:scale-110 transition-transform duration-500" />
         </div>
       </ProjectCard>
 
@@ -196,7 +577,7 @@ const Holdings = () => (
         links={[{ label: 'View Docs', url: '#' }]}
       >
         <div className="absolute right-[-20px] bottom-[-20px] p-6 opacity-40 group-hover:opacity-100 transition-opacity">
-           <Terminal size={140} strokeWidth={0.5} className="text-zinc-600" />
+           <Terminal size={140} strokeWidth={0.5} className="text-zinc-600 group-hover:-translate-y-2 transition-transform duration-500" />
         </div>
       </ProjectCard>
 
@@ -204,14 +585,19 @@ const Holdings = () => (
   </section>
 );
 
-const Footer = () => (
+const Footer = ({ onTriggerSecret }: { onTriggerSecret: () => void }) => (
   <footer className="border-t border-zinc-800 bg-[#050505] py-20">
     <div className="max-w-[1400px] mx-auto px-6 flex flex-col md:flex-row justify-between items-start gap-10">
       <div>
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-6 h-6 bg-white flex items-center justify-center">
+          {/* Secret Trigger: The Footer Logo Icon */}
+          <button 
+            onClick={onTriggerSecret}
+            className="w-6 h-6 bg-white flex items-center justify-center hover:bg-orange-500 transition-colors"
+            title="Open Console"
+          >
             <Command size={12} className="text-black" strokeWidth={3} />
-          </div>
+          </button>
           <span className="font-sans font-bold text-sm tracking-tighter text-white">JDI.SH</span>
         </div>
         <p className="text-zinc-600 text-xs font-mono max-w-xs">
@@ -229,14 +615,117 @@ const Footer = () => (
   </footer>
 );
 
-export default function App() {
+// --- Manifesto View ---
+
+const Law = ({ number, title, content }: { number: string, title: string, content: string }) => (
+  <div className="grid md:grid-cols-12 gap-6 py-12 border-b border-zinc-800">
+     <div className="md:col-span-2 text-zinc-600 font-mono text-xs uppercase tracking-widest pt-2">
+       LAW_{number}
+     </div>
+     <div className="md:col-span-10">
+       <h3 className="text-3xl text-white font-sans font-bold mb-6 uppercase tracking-tight">{title}</h3>
+       <p className="text-zinc-400 font-mono text-sm leading-7 max-w-2xl">{content}</p>
+     </div>
+  </div>
+);
+
+const ManifestoPage = () => {
+  const [date, setDate] = useState(new Date());
+  
+  useEffect(() => {
+    const timer = setInterval(() => setDate(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#09090b] selection:bg-orange-500/30 selection:text-orange-200 font-mono">
-      <Navbar />
-      <Hero />
-      <Manifesto />
-      <Holdings />
-      <Footer />
+    <div className="min-h-screen pt-32 pb-20">
+      <div className="max-w-[1000px] mx-auto px-6">
+        
+        {/* Header */}
+        <div className="mb-24">
+          <h1 className="text-6xl md:text-8xl font-bold text-white mb-8 tracking-tighter font-sans">
+            THE PROTOCOL
+          </h1>
+          <p className="text-xl md:text-2xl text-zinc-400 font-sans font-light leading-relaxed max-w-3xl border-l-2 border-white pl-8">
+            Software has become bloated, slow, and overly bureaucratic. 
+            We are returning to the fundamentals of craft, utility, and speed.
+            Here is how we operate.
+          </p>
+        </div>
+
+        {/* Laws */}
+        <div className="border-t border-zinc-800">
+          <Law 
+            number="01" 
+            title="Default to Action" 
+            content="Analysis paralysis is the death of innovation. We do not spend weeks in meetings discussing hypothetical problems. We build the prototype. We ship the beta. We learn from reality, not from documentation."
+          />
+          <Law 
+            number="02" 
+            title="Subtraction over Addition" 
+            content="Every feature adds weight. Every line of code adds liability. We strive to solve problems with the minimum viable surface area. Good software is defined by what it leaves out, not what it packs in."
+          />
+          <Law 
+            number="03" 
+            title="Craft is Marketing" 
+            content="We do not rely on aggressive sales tactics or dark patterns. We believe that if you build something truly excellent—something that respects the user's intelligence and time—the growth will take care of itself."
+          />
+          <Law 
+            number="04" 
+            title="Speed is a Feature" 
+            content="Slow software is disrespectful. We optimize for 60fps (or 120fps) interfaces, instant load times, and low latency. If it feels slow, it is broken."
+          />
+          <Law 
+            number="05" 
+            title="Build Levers" 
+            content="We focus on building tools that give users leverage. Whether it's a developer library or a consumer productivity app, the goal is always the same: allow the human to do more with less effort."
+          />
+           <Law 
+            number="06" 
+            title="Compound Value" 
+            content="We play long-term games. We build infrastructure that we can reuse across projects. We invest in distinct, ownable IP. We are not here for a quick flip; we are here to build a legacy of useful software."
+          />
+        </div>
+
+        {/* Footer / Signature */}
+        <div className="mt-24 pt-12 border-t border-zinc-800 flex justify-between items-end opacity-50 font-mono text-xs">
+           <div>
+             <div className="uppercase tracking-widest text-zinc-500 mb-2">Executed By</div>
+             <div className="text-white">Just Do It Software Holdings</div>
+           </div>
+           <div className="text-right">
+             <div className="uppercase tracking-widest text-zinc-500 mb-2">Timestamp</div>
+             <div className="text-zinc-400">{date.toISOString()}</div>
+           </div>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  const [view, setView] = useState<'home' | 'manifesto'>('home');
+  const [showSecret, setShowSecret] = useState(false);
+
+  return (
+    <div className="min-h-screen bg-[#09090b] selection:bg-orange-500/30 selection:text-orange-200 font-mono relative pb-12">
+      <Navbar onViewChange={setView} currentView={view} />
+      
+      {view === 'home' ? (
+        <>
+          <Hero onViewChange={setView} />
+          <Holdings />
+        </>
+      ) : (
+        <ManifestoPage />
+      )}
+      
+      <Footer onTriggerSecret={() => setShowSecret(true)} />
+      
+      {showSecret && <SecretTerminal onClose={() => setShowSecret(false)} />}
     </div>
   );
 }
