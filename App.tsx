@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowUpRight, Box, Terminal, Cpu, Mic, Layers, Zap, Anchor, Globe, Command, ArrowRight, X, ChevronRight, RefreshCw, Hash, AlignLeft, Type, ChevronDown, Clock } from 'lucide-react';
+import { ArrowUpRight, Box, Terminal, Cpu, Mic, Layers, Zap, Anchor, Globe, Command, ArrowRight, X, ChevronRight, RefreshCw, Hash, AlignLeft, Type, ChevronDown, Clock, BookOpen, Languages, Play, MousePointer, Volume2, CheckCircle, Chrome } from 'lucide-react';
 
 // --- Acronym Data (Mode 1) ---
 
@@ -396,10 +396,10 @@ const SecretTerminal = ({ onClose }: { onClose: () => void }) => {
 
 // --- Navigation ---
 
-const Navbar = ({ onViewChange, currentView }: { onViewChange: (view: 'home' | 'manifesto') => void, currentView: string }) => (
+const Navbar = ({ onViewChange, currentView }: { onViewChange: (view: 'home' | 'manifesto' | 'sidecap') => void, currentView: string }) => (
   <nav className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-800">
     <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-      <div 
+      <div
         className="flex items-center gap-3 cursor-pointer group"
         onClick={() => onViewChange('home')}
       >
@@ -409,7 +409,13 @@ const Navbar = ({ onViewChange, currentView }: { onViewChange: (view: 'home' | '
         <span className="font-sans font-bold text-lg tracking-tighter text-white">JDI.SH</span>
       </div>
       <div className="hidden md:flex items-center gap-8">
-        <button 
+        <button
+          onClick={() => onViewChange('sidecap')}
+          className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentView === 'sidecap' ? 'text-blue-500' : 'text-zinc-500 hover:text-white'}`}
+        >
+          SideCap
+        </button>
+        <button
           onClick={() => onViewChange('manifesto')}
           className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentView === 'manifesto' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
         >
@@ -514,7 +520,7 @@ const ProjectCard = ({
   </div>
 );
 
-const Holdings = () => (
+const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void }) => (
   <section className="py-32 px-6 max-w-[1400px] mx-auto border-t border-zinc-800">
     <div className="flex items-end justify-between mb-16">
       <h2 className="text-4xl font-bold text-white font-sans tracking-tight">HOLDINGS</h2>
@@ -570,8 +576,8 @@ const Holdings = () => (
       </ProjectCard>
 
       {/* DebugKit */}
-      <ProjectCard 
-        title="DebugKit" 
+      <ProjectCard
+        title="DebugKit"
         desc="Instant developer tools for SwiftUI. Inject a powerful debug toolbar into any view hierarchy with a single line of code."
         tags={['Open Source', 'Library', 'Swift']}
         links={[{ label: 'View Docs', url: '#' }]}
@@ -580,6 +586,25 @@ const Holdings = () => (
            <Terminal size={140} strokeWidth={0.5} className="text-zinc-600 group-hover:-translate-y-2 transition-transform duration-500" />
         </div>
       </ProjectCard>
+
+      {/* SideCap */}
+      <div onClick={() => onViewChange('sidecap')} className="cursor-pointer">
+        <ProjectCard
+          title="SideCap"
+          desc="Learn languages while watching YouTube. Click any word in captions to instantly see definitions, pronunciations, and translations—all without leaving your video."
+          tags={['Consumer', 'Chrome Extension', 'Language Learning']}
+          links={[]}
+        >
+          <div className="absolute right-[-20px] bottom-[-20px] p-6 opacity-40 group-hover:opacity-100 transition-opacity">
+             <Languages size={140} strokeWidth={0.5} className="text-zinc-600 group-hover:rotate-6 transition-transform duration-500" />
+          </div>
+          <div className="absolute bottom-8 left-8">
+            <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-white hover:text-blue-400 transition-colors">
+              Learn More <ArrowUpRight size={12} />
+            </span>
+          </div>
+        </ProjectCard>
+      </div>
 
     </div>
   </section>
@@ -704,27 +729,361 @@ const ManifestoPage = () => {
   );
 };
 
+// --- SideCap Landing Page ---
+
+const FeatureCard = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
+  <div className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-lg group hover:border-zinc-700 transition-colors">
+    <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-center justify-center mb-4 group-hover:bg-blue-500/20 transition-colors">
+      <Icon size={20} className="text-blue-400" />
+    </div>
+    <h3 className="text-lg font-bold text-white font-sans mb-2">{title}</h3>
+    <p className="text-zinc-500 text-sm font-mono leading-relaxed">{desc}</p>
+  </div>
+);
+
+const SideCapPage = ({ onBack, onPrivacy }: { onBack: () => void, onPrivacy: () => void }) => {
+  return (
+    <div className="min-h-screen pt-24 pb-20">
+      <div className="max-w-[1200px] mx-auto px-6">
+
+        {/* Back Button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors mb-12"
+        >
+          <ArrowRight size={14} className="rotate-180" /> Back to Holdings
+        </button>
+
+        {/* Hero Section */}
+        <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
+          <div>
+            <div className="inline-flex items-center gap-3 mb-6">
+              <img src="/sidecap/icon.png" alt="SideCap" className="w-12 h-12 rounded-xl" />
+              <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full">
+                <Chrome size={12} className="text-blue-400" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Chrome Extension</span>
+              </div>
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 tracking-tighter font-sans leading-[1.1]">
+              Learn languages while watching YouTube
+            </h1>
+
+            <p className="text-xl text-zinc-400 font-sans font-light leading-relaxed mb-8">
+              Turn any YouTube video into an interactive language lesson. Click words in captions to instantly see definitions, pronunciations, and translations.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+              <a
+                href="#"
+                className="group flex items-center justify-center gap-3 px-8 py-4 bg-blue-500 text-white font-bold font-mono text-sm uppercase tracking-wider hover:bg-blue-400 transition-all rounded-lg"
+              >
+                <Chrome size={18} />
+                Add to Chrome
+                <span className="text-blue-200 text-xs font-normal">— Free</span>
+              </a>
+              <a
+                href="#features"
+                className="flex items-center justify-center gap-2 px-6 py-4 border border-zinc-700 text-zinc-300 font-bold font-mono text-sm uppercase tracking-wider hover:border-zinc-500 hover:text-white transition-all rounded-lg"
+              >
+                See How It Works
+              </a>
+            </div>
+            <button
+              onClick={onPrivacy}
+              className="text-zinc-500 hover:text-zinc-300 text-xs font-mono transition-colors"
+            >
+              Privacy Policy
+            </button>
+          </div>
+
+          {/* Hero Screenshot */}
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-500/20 blur-3xl opacity-30 rounded-3xl"></div>
+            <img
+              src="/sidecap/hero.png"
+              alt="SideCap in action"
+              className="relative rounded-xl border border-zinc-800 shadow-2xl shadow-black/50"
+            />
+          </div>
+        </div>
+
+        {/* Features Grid */}
+        <section id="features" className="mb-24">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white font-sans tracking-tight mb-4">
+              Everything you need to learn while you watch
+            </h2>
+            <p className="text-zinc-500 font-mono text-sm max-w-xl mx-auto">
+              SideCap enhances YouTube's native captions with powerful language learning tools
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <FeatureCard
+              icon={MousePointer}
+              title="Click Any Word"
+              desc="Simply click on any word in the captions to instantly see its definition, part of speech, and pronunciation."
+            />
+            <FeatureCard
+              icon={Volume2}
+              title="Hear Pronunciation"
+              desc="Listen to words spoken aloud with the built-in text-to-speech feature. Perfect your accent as you learn."
+            />
+            <FeatureCard
+              icon={Languages}
+              title="Translations"
+              desc="See translations in your native language to understand unfamiliar words in context."
+            />
+            <FeatureCard
+              icon={Clock}
+              title="Caption History"
+              desc="Never miss a word. Scroll through timestamped caption history in the sidebar and jump to any moment."
+            />
+            <FeatureCard
+              icon={Play}
+              title="Video Sync"
+              desc="Click the Video Sync button to jump back to exactly where a word was spoken in the video."
+            />
+            <FeatureCard
+              icon={BookOpen}
+              title="Learn in Context"
+              desc="See example sentences and usage notes to understand how words are used naturally."
+            />
+          </div>
+        </section>
+
+        {/* Screenshot Showcase */}
+        <section className="mb-24">
+          <div className="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+              <h2 className="text-3xl font-bold text-white font-sans tracking-tight mb-6">
+                Instant Word Analysis
+              </h2>
+              <p className="text-zinc-400 font-mono text-sm leading-relaxed mb-6">
+                Click any word and get a clean popup with everything you need: definition, phonetic pronunciation, context, and a button to hear it spoken aloud.
+              </p>
+              <ul className="space-y-3">
+                {[
+                  'Phonetic transcription (IPA)',
+                  'Clear, concise definitions',
+                  'Example sentences in context',
+                  'One-click audio pronunciation'
+                ].map((item, i) => (
+                  <li key={i} className="flex items-center gap-3 text-zinc-300 text-sm font-mono">
+                    <CheckCircle size={16} className="text-green-500 flex-shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-green-500/10 to-blue-500/10 blur-2xl opacity-50 rounded-3xl"></div>
+              <img
+                src="/sidecap/word-analysis.png"
+                alt="Word Analysis Feature"
+                className="relative rounded-xl border border-zinc-800 shadow-xl mx-auto"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* CTA Section */}
+        <section className="text-center py-16 px-8 bg-gradient-to-b from-zinc-900/50 to-zinc-900/0 border border-zinc-800 rounded-2xl">
+          <h2 className="text-3xl md:text-4xl font-bold text-white font-sans tracking-tight mb-4">
+            Start learning today
+          </h2>
+          <p className="text-zinc-500 font-mono text-sm max-w-lg mx-auto mb-8">
+            SideCap is free to use. Install it now and transform your YouTube watching into language learning time.
+          </p>
+          <a
+            href="#"
+            className="inline-flex items-center gap-3 px-8 py-4 bg-white text-black font-bold font-mono text-sm uppercase tracking-wider hover:bg-zinc-200 transition-all rounded-lg"
+          >
+            <Chrome size={18} />
+            Add to Chrome — It's Free
+          </a>
+        </section>
+
+      </div>
+    </div>
+  );
+};
+
+// --- SideCap Privacy Policy Page ---
+
+const SideCapPrivacyPage = ({ onBack }: { onBack: () => void }) => {
+  return (
+    <div className="min-h-screen pt-24 pb-20">
+      <div className="max-w-[800px] mx-auto px-6">
+
+        {/* Back Button */}
+        <button
+          onClick={onBack}
+          className="flex items-center gap-2 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors mb-12"
+        >
+          <ArrowRight size={14} className="rotate-180" /> Back to SideCap
+        </button>
+
+        {/* Header */}
+        <div className="mb-12">
+          <div className="inline-flex items-center gap-3 mb-6">
+            <img src="/sidecap/icon.png" alt="SideCap" className="w-10 h-10 rounded-lg" />
+            <span className="text-zinc-500 font-mono text-sm">SideCap</span>
+          </div>
+          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tighter font-sans">
+            Privacy Policy
+          </h1>
+          <p className="text-zinc-500 text-sm font-mono">
+            Last updated: December 2024
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="space-y-10 text-zinc-400 font-mono text-sm leading-relaxed">
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Overview</h2>
+            <p>
+              SideCap is a browser extension that enhances YouTube captions with language learning features.
+              We are committed to protecting your privacy and being transparent about our data practices.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Data We Collect</h2>
+            <p className="mb-4">
+              <strong className="text-zinc-200">SideCap does not collect any personal data.</strong>
+            </p>
+            <p>
+              The extension operates entirely on your device and does not transmit any personal information,
+              browsing history, or viewing habits to external servers.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Local Storage</h2>
+            <p className="mb-4">
+              SideCap uses Chrome's local storage API to save your preferences, such as:
+            </p>
+            <ul className="list-disc list-inside space-y-2 ml-2 mb-4">
+              <li>UI settings and display preferences</li>
+              <li>Caption history within a viewing session</li>
+            </ul>
+            <p>
+              This data is stored locally on your device and is never transmitted elsewhere.
+              You can clear this data at any time by removing the extension or clearing your browser's storage.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Permissions</h2>
+            <p className="mb-4">The extension requests the following permissions:</p>
+            <ul className="space-y-4 ml-2">
+              <li>
+                <span className="text-zinc-200 font-bold">Storage Permission</span>
+                <p className="mt-1">Used to save your preferences locally on your device.</p>
+              </li>
+              <li>
+                <span className="text-zinc-200 font-bold">YouTube Site Access</span>
+                <p className="mt-1">
+                  Required to inject the caption enhancement features on youtube.com and m.youtube.com.
+                  The extension only runs on YouTube pages.
+                </p>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Third-Party Services</h2>
+            <p className="mb-4">
+              SideCap uses dictionary APIs to fetch word definitions and pronunciations when you click on a word.
+            </p>
+            <p>
+              These requests contain only the word being looked up—no personal information,
+              browsing history, or context is shared with these services.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Data Security</h2>
+            <p>
+              Since we don't collect personal data, there is no personal data to secure on our end.
+              All user preferences are stored locally in your browser using Chrome's secure storage APIs.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Children's Privacy</h2>
+            <p>
+              SideCap does not knowingly collect any personal information from children.
+              The extension is designed for general audiences and contains no age-restricted content.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Changes to This Policy</h2>
+            <p>
+              We may update this privacy policy from time to time. Any changes will be posted on this page
+              with an updated revision date. Continued use of the extension after changes constitutes
+              acceptance of the updated policy.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-white font-sans font-bold text-xl mb-4">Contact Us</h2>
+            <p>
+              If you have any questions about this privacy policy or SideCap's data practices,
+              please contact us at{' '}
+              <a href="mailto:hello@jdi.sh" className="text-blue-400 hover:text-blue-300 transition-colors">
+                hello@jdi.sh
+              </a>
+            </p>
+          </section>
+
+        </div>
+
+        {/* Footer */}
+        <div className="mt-16 pt-8 border-t border-zinc-800">
+          <p className="text-zinc-600 text-xs font-mono">
+            © 2024 JDI.SH — SideCap Privacy Policy
+          </p>
+        </div>
+
+      </div>
+    </div>
+  );
+};
+
 // --- Main App ---
 
 export default function App() {
-  const [view, setView] = useState<'home' | 'manifesto'>('home');
+  const [view, setView] = useState<'home' | 'manifesto' | 'sidecap' | 'sidecap-privacy'>('home');
   const [showSecret, setShowSecret] = useState(false);
+
+  const renderView = () => {
+    switch (view) {
+      case 'manifesto':
+        return <ManifestoPage />;
+      case 'sidecap':
+        return <SideCapPage onBack={() => setView('home')} onPrivacy={() => setView('sidecap-privacy')} />;
+      case 'sidecap-privacy':
+        return <SideCapPrivacyPage onBack={() => setView('sidecap')} />;
+      default:
+        return (
+          <>
+            <Hero onViewChange={setView} />
+            <Holdings onViewChange={setView} />
+          </>
+        );
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-orange-500/30 selection:text-orange-200 font-mono relative pb-12">
       <Navbar onViewChange={setView} currentView={view} />
-      
-      {view === 'home' ? (
-        <>
-          <Hero onViewChange={setView} />
-          <Holdings />
-        </>
-      ) : (
-        <ManifestoPage />
-      )}
-      
+      {renderView()}
       <Footer onTriggerSecret={() => setShowSecret(true)} />
-      
       {showSecret && <SecretTerminal onClose={() => setShowSecret(false)} />}
     </div>
   );
