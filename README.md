@@ -1,20 +1,39 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# JDI.SH
 
-# Run and deploy your AI Studio app
+Portfolio website for **Just Do It Software Holdings**.
 
-This contains everything you need to run your app locally.
+Live at [jdi.sh](https://jdi.sh)
 
-View your app in AI Studio: https://ai.studio/apps/drive/1Zhca8Vf053LNXqp9RCRWep9AwCOP-Bsh
+## Stack
 
-## Run Locally
+- React 19 + TypeScript
+- Vite
+- React Router (client-side routing)
+- Tailwind CSS (via CDN)
+- GitHub Pages (deployment)
 
-**Prerequisites:**  Node.js
+## Development
 
+```bash
+pnpm install
+pnpm dev
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Build & Deploy
+
+```bash
+pnpm build
+```
+
+Deploys automatically to GitHub Pages on push to `main` via GitHub Actions.
+
+## Routes
+
+- `/` - Home (holdings overview)
+- `/manifesto` - The Protocol
+- `/sidecap` - SideCap product page
+- `/sidecap/privacy` - SideCap privacy policy
+
+## SPA Routing on GitHub Pages
+
+Uses a `404.html` redirect trick to support clean URLs on GitHub Pages. Direct URL access (e.g., `jdi.sh/sidecap`) works via sessionStorage redirect.
