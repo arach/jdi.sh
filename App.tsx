@@ -1057,23 +1057,57 @@ const SideCapPrivacyPage = ({ onBack }: { onBack: () => void }) => {
 
 // --- Main App ---
 
+type ViewType = 'home' | 'manifesto' | 'sidecap' | 'sidecap-privacy';
+
+const getViewFromPath = (): ViewType => {
+  const path = window.location.pathname;
+  if (path === '/manifesto') return 'manifesto';
+  if (path === '/sidecap') return 'sidecap';
+  if (path === '/sidecap/privacy') return 'sidecap-privacy';
+  return 'home';
+};
+
+const getPathForView = (view: ViewType): string => {
+  if (view === 'home') return '/';
+  if (view === 'sidecap-privacy') return '/sidecap/privacy';
+  return `/${view}`;
+};
+
 export default function App() {
-  const [view, setView] = useState<'home' | 'manifesto' | 'sidecap' | 'sidecap-privacy'>('home');
+  const [view, setView] = useState<ViewType>(getViewFromPath);
   const [showSecret, setShowSecret] = useState(false);
+
+  // Handle browser back/forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      setView(getViewFromPath());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  // Update URL when view changes
+  const handleViewChange = (newView: ViewType) => {
+    const newPath = getPathForView(newView);
+    window.history.pushState(null, '', newPath);
+    setView(newView);
+  };
 
   const renderView = () => {
     switch (view) {
       case 'manifesto':
         return <ManifestoPage />;
       case 'sidecap':
-        return <SideCapPage onBack={() => setView('home')} onPrivacy={() => setView('sidecap-privacy')} />;
+        return <SideCapPage onBack={() => handleViewChange('home')} onPrivacy={() => handleViewChange('sidecap-privacy')} />;
       case 'sidecap-privacy':
-        return <SideCapPrivacyPage onBack={() => setView('sidecap')} />;
+        return <SideCapPrivacyPage onBack={() => handleViewChange('sidecap')} />;
       default:
         return (
           <>
-            <Hero onViewChange={setView} />
-            <Holdings onViewChange={setView} />
+            <Hero onViewChange={handleViewChange} />
+            <Holdings onViewChange={handleViewChange} />
           </>
         );
     }
@@ -1081,7 +1115,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-orange-500/30 selection:text-orange-200 font-mono relative pb-12">
-      <Navbar onViewChange={setView} currentView={view} />
+      <Navbar onViewChange={handleViewChange} currentView={view} />
       {renderView()}
       <Footer onTriggerSecret={() => setShowSecret(true)} />
       {showSecret && <SecretTerminal onClose={() => setShowSecret(false)} />}
