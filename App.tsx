@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom';
 import { ArrowUpRight, Box, Terminal, Cpu, Mic, Layers, Zap, Anchor, Globe, Command, ArrowRight, X, ChevronRight, RefreshCw, Hash, AlignLeft, Type, ChevronDown, Clock, BookOpen, Languages, Play, MousePointer, Volume2, CheckCircle, Chrome } from 'lucide-react';
 
 // --- Acronym Data (Mode 1) ---
@@ -396,66 +397,68 @@ const SecretTerminal = ({ onClose }: { onClose: () => void }) => {
 
 // --- Navigation ---
 
-const Navbar = ({ onViewChange, currentView }: { onViewChange: (view: 'home' | 'manifesto' | 'sidecap') => void, currentView: string }) => (
-  <nav className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-800">
-    <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
-      <div
-        className="flex items-center gap-3 cursor-pointer group"
-        onClick={() => onViewChange('home')}
-      >
-        <div className="w-8 h-8 bg-white flex items-center justify-center group-hover:bg-orange-500 transition-colors">
-          <Command size={16} className="text-black" strokeWidth={3} />
+const Navbar = () => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-[#09090b]/90 backdrop-blur-md border-b border-zinc-800">
+      <div className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
+        <Link to="/" className="flex items-center gap-3 cursor-pointer group">
+          <div className="w-8 h-8 bg-white flex items-center justify-center group-hover:bg-orange-500 transition-colors">
+            <Command size={16} className="text-black" strokeWidth={3} />
+          </div>
+          <span className="font-sans font-bold text-lg tracking-tighter text-white">JDI.SH</span>
+        </Link>
+        <div className="hidden md:flex items-center gap-8">
+          <Link
+            to="/sidecap"
+            className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentPath.startsWith('/sidecap') ? 'text-blue-500' : 'text-zinc-500 hover:text-white'}`}
+          >
+            SideCap
+          </Link>
+          <Link
+            to="/manifesto"
+            className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentPath === '/manifesto' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
+          >
+            Manifesto
+          </Link>
+          <div className="h-4 w-[1px] bg-zinc-800"></div>
+          <a href="mailto:hello@jdi.sh" className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
+              <span className="text-xs font-bold uppercase tracking-widest">Contact</span>
+          </a>
         </div>
-        <span className="font-sans font-bold text-lg tracking-tighter text-white">JDI.SH</span>
       </div>
-      <div className="hidden md:flex items-center gap-8">
-        <button
-          onClick={() => onViewChange('sidecap')}
-          className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentView === 'sidecap' ? 'text-blue-500' : 'text-zinc-500 hover:text-white'}`}
-        >
-          SideCap
-        </button>
-        <button
-          onClick={() => onViewChange('manifesto')}
-          className={`text-xs font-bold uppercase tracking-widest transition-colors ${currentView === 'manifesto' ? 'text-orange-500' : 'text-zinc-500 hover:text-white'}`}
-        >
-          Manifesto
-        </button>
-        <div className="h-4 w-[1px] bg-zinc-800"></div>
-        <a href="mailto:hello@jdi.sh" className="text-zinc-500 hover:text-white transition-colors flex items-center gap-2">
-            <span className="text-xs font-bold uppercase tracking-widest">Contact</span>
-        </a>
-      </div>
-    </div>
-  </nav>
-);
+    </nav>
+  );
+};
 
 // --- Home View Components ---
 
-const Hero = ({ onViewChange }: { onViewChange: (view: 'manifesto') => void }) => (
+const Hero = () => (
   <section className="pt-40 pb-32 px-6 max-w-[1400px] mx-auto border-b border-zinc-800">
     <div className="max-w-4xl">
       <div className="inline-flex items-center gap-2 mb-8 border border-zinc-800 px-3 py-1 rounded-full bg-zinc-900/50">
         <div className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse"></div>
         <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">Software Holdings</span>
       </div>
-      
+
       <h1 className="text-6xl md:text-9xl font-bold text-white mb-10 tracking-tighter leading-[0.85] font-sans">
         JUST DO IT.
       </h1>
-      
+
       <div className="flex flex-col md:flex-row gap-10 items-start">
         <p className="text-xl text-zinc-400 max-w-2xl leading-relaxed font-light font-sans border-l-2 border-orange-500 pl-6">
-          We build and ship cool software to improve life one thing at a time. 
+          We build and ship cool software to improve life one thing at a time.
           No bloat. No bureaucracy. Just shipping.
         </p>
-        
-        <button 
-          onClick={() => onViewChange('manifesto')}
+
+        <Link
+          to="/manifesto"
           className="group flex items-center gap-3 px-6 py-4 bg-white text-black font-bold font-mono text-xs uppercase tracking-wider hover:bg-orange-500 hover:text-white transition-all"
         >
           Read The Protocol <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-        </button>
+        </Link>
       </div>
     </div>
   </section>
@@ -520,7 +523,7 @@ const ProjectCard = ({
   </div>
 );
 
-const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void }) => (
+const Holdings = () => (
   <section className="py-32 px-6 max-w-[1400px] mx-auto border-t border-zinc-800">
     <div className="flex items-end justify-between mb-16">
       <h2 className="text-4xl font-bold text-white font-sans tracking-tight">HOLDINGS</h2>
@@ -531,11 +534,11 @@ const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void })
     </div>
 
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-      
+
       {/* TALKIE (Flagship) */}
-      <ProjectCard 
-        featured 
-        title="Talkie" 
+      <ProjectCard
+        featured
+        title="Talkie"
         desc="The next-generation voice interface for human-computer interaction. Talkie removes the friction of typing, creating a fluid, natural conversation loop with your AI agents."
         tags={['Consumer', 'AI', 'Voice']}
         links={[{ label: 'Visit Site', url: 'https://usetalkie.com' }]}
@@ -545,12 +548,12 @@ const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void })
           <div className="flex flex-col h-full justify-center items-center gap-6">
              <div className="flex gap-2 items-center justify-center h-20">
                 {[35, 60, 45, 65, 40].map((h, i) => (
-                  <div 
-                    key={i} 
-                    className="w-3 bg-white rounded-full group-hover:animate-pulse transition-all duration-300" 
-                    style={{ 
-                        height: `${h}px`, 
-                        animationDuration: `${0.6 + (i * 0.1)}s` 
+                  <div
+                    key={i}
+                    className="w-3 bg-white rounded-full group-hover:animate-pulse transition-all duration-300"
+                    style={{
+                        height: `${h}px`,
+                        animationDuration: `${0.6 + (i * 0.1)}s`
                     }}
                   ></div>
                 ))}
@@ -564,8 +567,8 @@ const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void })
       </ProjectCard>
 
       {/* WFKit */}
-      <ProjectCard 
-        title="WFKit" 
+      <ProjectCard
+        title="WFKit"
         desc="A high-performance workflow graph engine for Swift. Brings React Flow-style node editing to native macOS & iOS apps with zero dependencies."
         tags={['Open Source', 'Library', 'Swift']}
         links={[{ label: 'View Docs', url: '#' }]}
@@ -588,7 +591,7 @@ const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void })
       </ProjectCard>
 
       {/* SideCap */}
-      <div onClick={() => onViewChange('sidecap')} className="cursor-pointer">
+      <Link to="/sidecap" className="cursor-pointer block">
         <ProjectCard
           title="SideCap"
           desc="Learn languages while watching YouTube. Click any word in captions to instantly see definitions, pronunciations, and translations—all without leaving your video."
@@ -604,7 +607,7 @@ const Holdings = ({ onViewChange }: { onViewChange: (view: 'sidecap') => void })
             </span>
           </div>
         </ProjectCard>
-      </div>
+      </Link>
 
     </div>
   </section>
@@ -741,18 +744,18 @@ const FeatureCard = ({ icon: Icon, title, desc }: { icon: any, title: string, de
   </div>
 );
 
-const SideCapPage = ({ onBack, onPrivacy }: { onBack: () => void, onPrivacy: () => void }) => {
+const SideCapPage = () => {
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="max-w-[1200px] mx-auto px-6">
 
         {/* Back Button */}
-        <button
-          onClick={onBack}
+        <Link
+          to="/"
           className="flex items-center gap-2 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors mb-12"
         >
           <ArrowRight size={14} className="rotate-180" /> Back to Holdings
-        </button>
+        </Link>
 
         {/* Hero Section */}
         <div className="grid lg:grid-cols-2 gap-16 items-center mb-24">
@@ -789,12 +792,12 @@ const SideCapPage = ({ onBack, onPrivacy }: { onBack: () => void, onPrivacy: () 
                 See How It Works
               </a>
             </div>
-            <button
-              onClick={onPrivacy}
+            <Link
+              to="/sidecap/privacy"
               className="text-zinc-500 hover:text-zinc-300 text-xs font-mono transition-colors"
             >
               Privacy Policy
-            </button>
+            </Link>
           </div>
 
           {/* Hero Screenshot */}
@@ -912,18 +915,18 @@ const SideCapPage = ({ onBack, onPrivacy }: { onBack: () => void, onPrivacy: () 
 
 // --- SideCap Privacy Policy Page ---
 
-const SideCapPrivacyPage = ({ onBack }: { onBack: () => void }) => {
+const SideCapPrivacyPage = () => {
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="max-w-[800px] mx-auto px-6">
 
         {/* Back Button */}
-        <button
-          onClick={onBack}
+        <Link
+          to="/sidecap"
           className="flex items-center gap-2 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest transition-colors mb-12"
         >
           <ArrowRight size={14} className="rotate-180" /> Back to SideCap
-        </button>
+        </Link>
 
         {/* Header */}
         <div className="mb-12">
@@ -1055,70 +1058,41 @@ const SideCapPrivacyPage = ({ onBack }: { onBack: () => void }) => {
   );
 };
 
-// --- Main App ---
+// --- Home Page ---
 
-type ViewType = 'home' | 'manifesto' | 'sidecap' | 'sidecap-privacy';
+const HomePage = () => (
+  <>
+    <Hero />
+    <Holdings />
+  </>
+);
 
-const getViewFromPath = (): ViewType => {
-  const path = window.location.pathname;
-  if (path === '/manifesto') return 'manifesto';
-  if (path === '/sidecap') return 'sidecap';
-  if (path === '/sidecap/privacy') return 'sidecap-privacy';
-  return 'home';
-};
+// --- Layout with shared components ---
 
-const getPathForView = (view: ViewType): string => {
-  if (view === 'home') return '/';
-  if (view === 'sidecap-privacy') return '/sidecap/privacy';
-  return `/${view}`;
-};
-
-export default function App() {
-  const [view, setView] = useState<ViewType>(getViewFromPath);
+const Layout = () => {
   const [showSecret, setShowSecret] = useState(false);
-
-  // Handle browser back/forward navigation
-  useEffect(() => {
-    const handlePopState = () => {
-      setView(getViewFromPath());
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
-
-  // Update URL when view changes
-  const handleViewChange = (newView: ViewType) => {
-    const newPath = getPathForView(newView);
-    window.history.pushState(null, '', newPath);
-    setView(newView);
-  };
-
-  const renderView = () => {
-    switch (view) {
-      case 'manifesto':
-        return <ManifestoPage />;
-      case 'sidecap':
-        return <SideCapPage onBack={() => handleViewChange('home')} onPrivacy={() => handleViewChange('sidecap-privacy')} />;
-      case 'sidecap-privacy':
-        return <SideCapPrivacyPage onBack={() => handleViewChange('sidecap')} />;
-      default:
-        return (
-          <>
-            <Hero onViewChange={handleViewChange} />
-            <Holdings onViewChange={handleViewChange} />
-          </>
-        );
-    }
-  };
 
   return (
     <div className="min-h-screen bg-[#09090b] selection:bg-orange-500/30 selection:text-orange-200 font-mono relative pb-12">
-      <Navbar onViewChange={handleViewChange} currentView={view} />
-      {renderView()}
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/manifesto" element={<ManifestoPage />} />
+        <Route path="/sidecap" element={<SideCapPage />} />
+        <Route path="/sidecap/privacy" element={<SideCapPrivacyPage />} />
+      </Routes>
       <Footer onTriggerSecret={() => setShowSecret(true)} />
       {showSecret && <SecretTerminal onClose={() => setShowSecret(false)} />}
     </div>
+  );
+};
+
+// --- Main App ---
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Layout />
+    </BrowserRouter>
   );
 }
